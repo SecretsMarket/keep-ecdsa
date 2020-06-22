@@ -25,7 +25,7 @@ contract ETHBonding is AbstractBonding {
     /// @param ethStakingAddress ETH Staking contract address.
     constructor(address registryAddress, address ethStakingAddress)
         public
-        AbstractBonding(registryAddress, ethStakingAddress)
+        AbstractBonding(registryAddress, ethStakingAddress, ethStakingAddress)
     {}
 
     /// @notice Withdraws amount from operator's value available for bonding.
@@ -37,7 +37,8 @@ contract ETHBonding is AbstractBonding {
     /// @param operator Address of the operator.
     function withdraw(uint256 amount, address operator) public {
         require(
-            msg.sender == operator || msg.sender == staking.ownerOf(operator),
+            msg.sender == operator ||
+                msg.sender == stakeDelegatable.ownerOf(operator),
             "Only operator or the owner is allowed to withdraw bond"
         );
 

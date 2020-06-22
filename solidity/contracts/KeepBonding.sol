@@ -36,7 +36,14 @@ contract KeepBonding is AbstractBonding {
         address registryAddress,
         address tokenStakingAddress,
         address tokenGrantAddress
-    ) public AbstractBonding(registryAddress, tokenStakingAddress) {
+    )
+        public
+        AbstractBonding(
+            registryAddress,
+            tokenStakingAddress, // Authorizations
+            tokenStakingAddress // StakeDelegatable
+        )
+    {
         tokenGrant = TokenGrant(tokenGrantAddress);
     }
 
@@ -54,7 +61,10 @@ contract KeepBonding is AbstractBonding {
     function withdraw(uint256 amount, address operator) public {
         require(
             msg.sender == operator ||
-                msg.sender.isTokenOwnerForOperator(operator, staking) ||
+                msg.sender.isTokenOwnerForOperator(
+                    operator,
+                    stakeDelegatable
+                ) ||
                 msg.sender.isGranteeForOperator(operator, tokenGrant),
             "Only operator or the owner is allowed to withdraw bond"
         );

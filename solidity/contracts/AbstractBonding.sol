@@ -15,7 +15,8 @@
 pragma solidity 0.5.17;
 
 import "@keep-network/keep-core/contracts/KeepRegistry.sol";
-import "@keep-network/keep-core/contracts/KeepStaking.sol";
+import "@keep-network/keep-core/contracts/Authorizations.sol";
+import "@keep-network/keep-core/contracts/StakeDelegatable.sol";
 import "@keep-network/sortition-pools/contracts/api/IBonding.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -28,8 +29,11 @@ contract AbstractBonding is IBonding {
     // Registry contract with a list of approved factories (operator contracts).
     KeepRegistry internal registry;
 
-    // Staking contract.
-    KeepStaking internal staking;
+    // Staking Authorizations contract.
+    Authorizations internal authorizations;
+
+    // Stake Delegatable contract.
+    StakeDelegatable internal stakeDelegatable;
 
     // Unassigned value in wei deposited by operators.
     mapping(address => uint256) public unbondedValue;
@@ -71,12 +75,16 @@ contract AbstractBonding is IBonding {
 
     /// @notice Initializes Keep Bonding contract.
     /// @param registryAddress Keep registry contract address.
-    /// @param stakingContractAddress Keep staking contract address.
-    constructor(address registryAddress, address stakingContractAddress)
-        public
-    {
+    /// @param authorizationsAddress Staking Authorizations contract address.
+    /// @param stakeDelegatableAddress Stake Delegatable contract address.
+    constructor(
+        address registryAddress,
+        address authorizationsAddress,
+        address stakeDelegatableAddress
+    ) public {
         registry = KeepRegistry(registryAddress);
-        staking = KeepStaking(stakingContractAddress); // Rename to: Staking
+        authorizations = Authorizations(authorizationsAddress);
+        stakeDelegatable = StakeDelegatable(stakeDelegatableAddress);
     }
 
     /// @notice Add the provided value to operator's pool available for bonding.
@@ -110,7 +118,7 @@ contract AbstractBonding is IBonding {
         // are no longer eligible. We cannot revert here.
         if (
             registry.isApprovedOperatorContract(bondCreator) &&
-            staking.isAuthorizedForOperator(operator, bondCreator) &&
+            authorizations.isAuthorizedForOperator(operator, bondCreator) &&
             hasSecondaryAuthorization(operator, authorizedSortitionPool)
         ) {
             return unbondedValue[operator];
@@ -281,7 +289,7 @@ contract AbstractBonding is IBonding {
         address _poolAddress
     ) public {
         require(
-            staking.authorizerOf(_operator) == msg.sender,
+            stakeDelegatable.authorizerOf(_operator) == msg.sender,
             "Not authorized"
         );
         authorizedPools[_operator][_poolAddress] = true;
@@ -298,7 +306,7 @@ contract AbstractBonding is IBonding {
         address _poolAddress
     ) public {
         require(
-            staking.authorizerOf(_operator) == msg.sender,
+            stakeDelegatable.authorizerOf(_operator) == msg.sender,
             "Not authorized"
         );
         authorizedPools[_operator][_poolAddress] = false;
@@ -326,7 +334,7 @@ contract AbstractBonding is IBonding {
 
         unbondedValue[operator] = unbondedValue[operator].sub(amount);
 
-        address beneficiary = staking.beneficiaryOf(operator);
+        address beneficiary = stakeDelegatable.beneficiaryOf(operator);
         require(
             beneficiary != address(0),
             "Beneficiary not defined for the operator"

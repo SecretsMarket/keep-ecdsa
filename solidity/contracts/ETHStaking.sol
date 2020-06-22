@@ -14,8 +14,9 @@
 
 pragma solidity 0.5.17;
 
+import "@keep-network/keep-core/contracts/Authorizations.sol";
+import "@keep-network/keep-core/contracts/StakeDelegatable.sol";
 import "@keep-network/keep-core/contracts/KeepRegistry.sol";
-import "@keep-network/keep-core/contracts/KeepStaking.sol";
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -24,10 +25,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /// @notice A staking contract for ETH staking. An owner of the ETH can delegate
 /// ETH as a stake to an operator. The value of ETH the owner is willing to stake
 /// should be deposited in `ETHBonding` contract for the given operator.
-contract ETHStaking is KeepStaking {
-    constructor(address keepRegistryAddress)
+contract ETHStaking is Authorizations, StakeDelegatable {
+    constructor(KeepRegistry keepRegistry)
         public
-        KeepStaking(keepRegistryAddress)
+        Authorizations(keepRegistry)
     {}
 
     event Staked(
